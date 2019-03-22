@@ -1,28 +1,34 @@
-ARG REPO=microsoft/dotnet
-FROM $REPO:2.2-runtime-deps-alpine3.8
+FROM microsoft/dotnet:1.0.5-runtime
+MAINTAINER Azure App Services Container Images <appsvc-images@microsoft.com>
 
-# Disable the invariant mode (set in base image)
-RUN apk add --no-cache icu-libs
+COPY bin.zip /tmp
+COPY init_container.sh /bin/
+COPY hostingstart.html /home/site/wwwroot/
+COPY sshd_config /etc/ssh/
 
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
-    LC_ALL=en_US.UTF-8 \
-    LANG=en_US.UTF-8
+RUN apt-get update \
+  && apt-get install -y apt-utils --no-install-recommends \
+  && apt-get install -y unzip --no-install-recommends \
+  && apt-get install nuget \
+  && apt-get update && apt-get install -y curl apt-transport-https  \
+  && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -  \
+  && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
+  && apt-get update && apt-get install -y yarn \
+  && mkdir -p /defaulthome/hostingstart \ 
+  && unzip -q -o /tmp/bin.zip -d /defaulthome/hostingstart \
+  && rm /tmp/bin.zip \
+  && echo "root:Docker!" | chpasswd \
+  && apt update \
+  && apt install -y --no-install-recommends openssh-server \
+  && chmod 755 /bin/init_container.sh \
+  && mkdir -p /home/LogFiles/ 
 
-# Install .NET Core SDK
-ENV DOTNET_SDK_VERSION 2.2.103
+EXPOSE 2222 8080
 
-RUN wget -O dotnet.tar.gz https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$DOTNET_SDK_VERSION/dotnet-sdk-$DOTNET_SDK_VERSION-linux-musl-x64.tar.gz \
-    && dotnet_sha512='a67d681fe480d9a0074b009ef33206d0303b657bdb889ab50b12a1d3838961df7a622c0dc9581467a7024e18efd29c487d91f074a86cf4b37f3ad4d64c20655b' \
-    && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
-    && mkdir -p /usr/share/dotnet \
-    && tar -C /usr/share/dotnet -xzf dotnet.tar.gz \
-    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
-    && rm dotnet.tar.gz
+ENV PORT 8080
+ENV WEBSITE_ROLE_INSTANCE_ID localRoleInstance
+ENV WEBSITE_INSTANCE_ID localInstance
 
-# Enable correct mode for dotnet watch (only mode supported in a container)
-ENV DOTNET_USE_POLLING_FILE_WATCHER=true \ 
-    # Skip extraction of XML docs - generally not useful within an image/container - helps performance
-    NUGET_XMLDOC_MODE=skip
+WORKDIR /home/site/wwwroot
 
-# Trigger first run experience by running arbitrary cmd to populate local package cache
-RUN dotnet help
+ENTRYPOINT ["/bin/init_container.sh"]
