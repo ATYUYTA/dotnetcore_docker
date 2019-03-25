@@ -15,13 +15,17 @@ RUN apt-get update \
 	
 RUN apt-get update -qq \
 	&& apt-get install -y --no-install-recommends build-essential  \
-	   apt-transport-https curl ca-certificates gnupg2 apt-utils nodejs
+	   apt-transport-https curl ca-certificates gnupg2 apt-utils nodejs sudo
+
+
 
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
 	&& echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
 	&& apt-get update -qq \
 	&& apt-get install -y yarn
 
+RUN curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - \
+	&& apt-get install -y nodejs
 
 
 # Install .NET Core SDK
