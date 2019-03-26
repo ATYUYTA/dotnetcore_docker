@@ -11,13 +11,8 @@ RUN apt-get update \
         libssl1.0.2 \
         libstdc++6 \
         zlib1g \
+		sudo \
     && rm -rf /var/lib/apt/lists/*
-	
-RUN apt-get update -qq \
-	&& apt-get install -y --no-install-recommends build-essential  \
-	   apt-transport-https curl ca-certificates gnupg2 apt-utils nodejs sudo
-
-
 
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
 	&& echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
@@ -47,6 +42,10 @@ ENV ASPNETCORE_URLS=http://+:80 \
     DOTNET_USE_POLLING_FILE_WATCHER=true \
     # Skip extraction of XML docs - generally not useful within an image/container - helps performance
     NUGET_XMLDOC_MODE=skip
+
+RUN mkdir /root/job
+
+WORKDIR /root/job
 
 # Trigger first run experience by running arbitrary cmd to populate local package cache
 RUN dotnet help
