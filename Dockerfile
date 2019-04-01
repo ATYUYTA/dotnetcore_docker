@@ -7,27 +7,16 @@ RUN apt-get update \
         libgcc1 \
         libgssapi-krb5-2 \
         libicu57 \
-        liblttng-ust0 \
-        libssl1.0.2 \
+        libssl1.1 \
         libstdc++6 \
         zlib1g \
-		sudo \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
-	&& echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-	&& apt-get update -qq \
-	&& apt-get install -y yarn
-
-RUN curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - \
-	&& apt-get install -y nodejs
-
-
 # Install .NET Core SDK
-ENV DOTNET_SDK_VERSION 2.2.105
+ENV DOTNET_SDK_VERSION 3.0.100-preview3-010431
 
 RUN curl -SL --output dotnet.tar.gz https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$DOTNET_SDK_VERSION/dotnet-sdk-$DOTNET_SDK_VERSION-linux-x64.tar.gz \
-    && dotnet_sha512='b7ad26b344995de91848adec56bda5dfe5fef0b83abaa3e4376dc790cf9786e945b625de1ae4cecaf5c5bef86284652886ed87696581553aeda89ee2e2e99517' \
+    && dotnet_sha512='eaa1208590e60a793caa8a35e9a26722a4e3bcd8733ea1f79d18c7a777e1a5a8e9d82eddabbd18b82d8795838e6dfc3b5ec7c4504e58c0c852f2d69d40131cfe' \
     && echo "$dotnet_sha512 dotnet.tar.gz" | sha512sum -c - \
     && mkdir -p /usr/share/dotnet \
     && tar -zxf dotnet.tar.gz -C /usr/share/dotnet \
@@ -42,10 +31,3 @@ ENV ASPNETCORE_URLS=http://+:80 \
     DOTNET_USE_POLLING_FILE_WATCHER=true \
     # Skip extraction of XML docs - generally not useful within an image/container - helps performance
     NUGET_XMLDOC_MODE=skip
-
-RUN mkdir /root/job
-
-WORKDIR /root/job
-
-# Trigger first run experience by running arbitrary cmd to populate local package cache
-RUN dotnet help
